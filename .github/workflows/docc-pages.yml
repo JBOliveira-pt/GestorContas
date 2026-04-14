@@ -1,4 +1,4 @@
-name: Build DocC and publish to GitHub Pages (docs/)
+name: Build DocC (Catalog) and publish to GitHub Pages (docs/)
 
 on:
     push:
@@ -25,56 +25,26 @@ jobs:
             - name: Xcode version
               run: xcodebuild -version
 
-            - name: List schemes (debug)
-              run: |
-                  set -euo pipefail
-                  xcodebuild -list -project GestorContas.xcodeproj
-
-            - name: Build DocC + export for static hosting
+            - name: Build DocC from catalog and export static site
               run: |
                   set -euo pipefail
 
-                  SCHEME="GestorContas"
+                  CATALOG_PATH="Documentation/GestorContas.docc"
                   HOSTING_BASE_PATH="GestorContas"
-                  DERIVED_DATA_PATH="$PWD/.derivedData"
 
-                  rm -rf "$DERIVED_DATA_PATH"
-                  mkdir -p "$DERIVED_DATA_PATH"
-
-                  # Build DocC (disable signing) and force derived data path
-                  xcodebuild docbuild \
-                    -project GestorContas.xcodeproj \
-                    -scheme "$SCHEME" \
-                    -destination "generic/platform=iOS" \
-                    -derivedDataPath "$DERIVED_DATA_PATH" \
-                    CODE_SIGNING_ALLOWED=NO \
-                    CODE_SIGNING_REQUIRED=NO \
-                    CODE_SIGN_IDENTITY="" \
-                    DEVELOPMENT_TEAM=""
-
-                  echo "Searching for .doccarchive in forced derived data path: $DERIVED_DATA_PATH"
-                  DOCCARCHIVE="$(find "$DERIVED_DATA_PATH" -type d -name "*.doccarchive" | head -n 1 || true)"
-
-                  # Fallback: sometimes Xcode still writes to the default DerivedData location
-                  if [ -z "${DOCCARCHIVE:-}" ]; then
-                    echo "Not found in $DERIVED_DATA_PATH. Falling back to ~/Library/Developer/Xcode/DerivedData ..."
-                    DOCCARCHIVE="$(find "$HOME/Library/Developer/Xcode/DerivedData" -type d -name "*.doccarchive" | head -n 1 || true)"
-                  fi
-
-                  if [ -z "${DOCCARCHIVE:-}" ]; then
-                    echo "No .doccarchive found."
-                    echo "Debug: listing potential docc-related dirs (forced path):"
-                    find "$DERIVED_DATA_PATH" -maxdepth 8 -type d -name "*docc*" || true
-                    echo "Debug: listing potential docc-related dirs (default path):"
-                    find "$HOME/Library/Developer/Xcode/DerivedData" -maxdepth 6 -type d -name "*docc*" || true
+                  if [ ! -d "$CATALOG_PATH" ]; then
+                    echo "DocC catalog not found at: $CATALOG_PATH"
+                    echo "Create it (Documentation/GestorContas.docc) and push again."
                     exit 1
                   fi
 
-                  echo "DocC archive: $DOCCARCHIVE"
-
+                  rm -rf docs/docc
                   mkdir -p docs/docc
-                  xcrun docc process-archive transform-for-static-hosting "$DOCCARCHIVE" \
+
+                  # Convert catalog directly to a static website
+                  xcrun docc convert "$CATALOG_PATH" \
                     --output-path docs/docc \
+                    --transform-for-static-hosting \
                     --hosting-base-path "$HOSTING_BASE_PATH"
 
                   touch docs/docc/.nojekyll
