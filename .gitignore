@@ -11,6 +11,7 @@ Thumbs.db
 # SwiftPM
 .build/
 Packages/
-*.xcodeproj
+
+# Xcode user/build artifacts
 xcuserdata/
 DerivedData/
