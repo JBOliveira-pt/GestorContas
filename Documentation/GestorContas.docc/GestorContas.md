@@ -1,11 +1,8 @@
 # `GestorContas`
 
-App iOS em SwiftUI para gestão de contas/dívidas.
+Gestor de Contas é um app iOS (SwiftUI) que ajuda a gerir contas e a organizar dívidas, incluindo estratégias para dividir ou refinanciar dívidas para melhor controlo financeiro.
 
-## Visão geral
-
-Descreva aqui o objetivo do app, principais features e como executar.
-
-## Tópicos
+## Conteúdo
 
 - <doc:GettingStarted>
+- <doc:Screenshots>
