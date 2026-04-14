@@ -5,6 +5,7 @@ on:
         branches: ["main"]
     workflow_dispatch:
 
+# We will commit generated files back to the repo
 permissions:
     contents: write
 
@@ -22,31 +23,36 @@ jobs:
               with:
                   fetch-depth: 0
 
-            - name: Select Xcode (default)
+            - name: Xcode version
               run: xcodebuild -version
 
-            # IMPORTANT:
-            # You must set these two values to match your project:
-            # -scheme: the scheme of your app target
-            # -destination: a generic iOS destination is fine for docbuild
-            - name: Build DocC archive
+            - name: List schemes (debug)
+              run: |
+                  set -euo pipefail
+                  xcodebuild -list -project GestorContas.xcodeproj
+
+            - name: Build DocC archive (no signing)
               run: |
                   set -euo pipefail
 
-                  # CHANGE THIS to your scheme name as shown in Xcode (Product > Scheme)
+                  # IMPORTANT: scheme name must match what "xcodebuild -list" shows
                   SCHEME="GestorContas"
 
-                  # Build DocC archive
                   xcodebuild docbuild \
                     -scheme "$SCHEME" \
                     -destination "generic/platform=iOS" \
-                    -derivedDataPath .derivedData
+                    -derivedDataPath .derivedData \
+                    CODE_SIGNING_ALLOWED=NO \
+                    CODE_SIGNING_REQUIRED=NO \
+                    CODE_SIGN_IDENTITY="" \
+                    DEVELOPMENT_TEAM=""
 
                   # Find generated .doccarchive
-                  DOCCARCHIVE=$(find .derivedData -type d -name "*.doccarchive" | head -n 1)
+                  DOCCARCHIVE="$(find .derivedData -type d -name "*.doccarchive" | head -n 1 || true)"
 
                   if [ -z "${DOCCARCHIVE:-}" ]; then
-                    echo "No .doccarchive found. Check scheme name and that the target builds."
+                    echo "No .doccarchive found."
+                    echo "Tip: confirm the scheme name and that docbuild succeeds locally."
                     exit 1
                   fi
 
@@ -58,14 +64,13 @@ jobs:
                     --output-path docs/docc \
                     --hosting-base-path GestorContas
 
-                  # GitHub Pages sometimes needs .nojekyll for folders with underscores, etc.
+                  # Avoid Jekyll processing issues
                   touch docs/docc/.nojekyll
 
             - name: Commit and push generated DocC
               run: |
                   set -euo pipefail
 
-                  # Only commit if there are changes
                   if git status --porcelain | grep -q .; then
                     git config user.name "github-actions[bot]"
                     git config user.email "github-actions[bot]@users.noreply.github.com"
