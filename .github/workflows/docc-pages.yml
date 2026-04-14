@@ -1,0 +1,78 @@
+name: Build DocC and publish to GitHub Pages (docs/)
+
+on:
+    push:
+        branches: ["main"]
+    workflow_dispatch:
+
+permissions:
+    contents: write
+
+concurrency:
+    group: docc-pages
+    cancel-in-progress: true
+
+jobs:
+    docc:
+        runs-on: macos-latest
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Select Xcode (default)
+              run: xcodebuild -version
+
+            # IMPORTANT:
+            # You must set these two values to match your project:
+            # -scheme: the scheme of your app target
+            # -destination: a generic iOS destination is fine for docbuild
+            - name: Build DocC archive
+              run: |
+                  set -euo pipefail
+
+                  # CHANGE THIS to your scheme name as shown in Xcode (Product > Scheme)
+                  SCHEME="GestorContas"
+
+                  # Build DocC archive
+                  xcodebuild docbuild \
+                    -scheme "$SCHEME" \
+                    -destination "generic/platform=iOS" \
+                    -derivedDataPath .derivedData
+
+                  # Find generated .doccarchive
+                  DOCCARCHIVE=$(find .derivedData -type d -name "*.doccarchive" | head -n 1)
+
+                  if [ -z "${DOCCARCHIVE:-}" ]; then
+                    echo "No .doccarchive found. Check scheme name and that the target builds."
+                    exit 1
+                  fi
+
+                  echo "DocC archive: $DOCCARCHIVE"
+
+                  # Export to static website into docs/docc
+                  mkdir -p docs/docc
+                  xcrun docc process-archive transform-for-static-hosting "$DOCCARCHIVE" \
+                    --output-path docs/docc \
+                    --hosting-base-path GestorContas
+
+                  # GitHub Pages sometimes needs .nojekyll for folders with underscores, etc.
+                  touch docs/docc/.nojekyll
+
+            - name: Commit and push generated DocC
+              run: |
+                  set -euo pipefail
+
+                  # Only commit if there are changes
+                  if git status --porcelain | grep -q .; then
+                    git config user.name "github-actions[bot]"
+                    git config user.email "github-actions[bot]@users.noreply.github.com"
+
+                    git add docs/docc
+                    git commit -m "Update DocC (auto)"
+                    git push
+                  else
+                    echo "No changes to commit."
+                  fi
