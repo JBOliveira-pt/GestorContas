@@ -41,7 +41,3 @@
     <figcaption style="font-size:0.95em;opacity:0.85;">Editar Dívida</figcaption>
   </figure>
 </div>
-
-## Dica
-
-Se quiser, posso ajustar esta galeria para 1 coluna no mobile e 3 colunas no desktop (via CSS), mas este layout 2xN já fica bom e simples.
