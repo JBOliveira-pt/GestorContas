@@ -1,0 +1,16 @@
+# General
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/
+
+# IntelliJ / JetBrains
+.idea/
+
+# SwiftPM
+.build/
+Packages/
+*.xcodeproj
+xcuserdata/
+DerivedData/
