@@ -30,7 +30,7 @@ jobs:
                   set -euo pipefail
 
                   CATALOG_PATH="Documentation/GestorContas.docc"
-                  HOSTING_BASE_PATH="GestorContas"
+                  HOSTING_BASE_PATH="GestorContas/docc"
 
                   if [ ! -d "$CATALOG_PATH" ]; then
                     echo "DocC catalog not found at: $CATALOG_PATH"
