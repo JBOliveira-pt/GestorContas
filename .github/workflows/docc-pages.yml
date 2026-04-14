@@ -5,7 +5,6 @@ on:
         branches: ["main"]
     workflow_dispatch:
 
-# We will commit generated files back to the repo
 permissions:
     contents: write
 
@@ -31,40 +30,51 @@ jobs:
                   set -euo pipefail
                   xcodebuild -list -project GestorContas.xcodeproj
 
-            - name: Build DocC archive (no signing)
+            - name: Build DocC + export for static hosting
               run: |
                   set -euo pipefail
 
-                  # IMPORTANT: scheme name must match what "xcodebuild -list" shows
                   SCHEME="GestorContas"
+                  HOSTING_BASE_PATH="GestorContas"
 
+                  # Build DocC (disable signing)
                   xcodebuild docbuild \
                     -scheme "$SCHEME" \
                     -destination "generic/platform=iOS" \
-                    -derivedDataPath .derivedData \
                     CODE_SIGNING_ALLOWED=NO \
                     CODE_SIGNING_REQUIRED=NO \
                     CODE_SIGN_IDENTITY="" \
                     DEVELOPMENT_TEAM=""
 
-                  # Find generated .doccarchive
-                  DOCCARCHIVE="$(find .derivedData -type d -name "*.doccarchive" | head -n 1 || true)"
+                  # Ask Xcode where DerivedData is for this scheme, then search from there.
+                  DERIVED_DATA_DIR="$(xcodebuild -showBuildSettings \
+                    -scheme "$SCHEME" \
+                    -destination "generic/platform=iOS" \
+                    2>/dev/null | awk -F' = ' '/DERIVED_DATA_DIR/ {print $2; exit}')"
+
+                  if [ -z "${DERIVED_DATA_DIR:-}" ]; then
+                    echo "Could not determine DERIVED_DATA_DIR"
+                    exit 1
+                  fi
+
+                  echo "DERIVED_DATA_DIR=$DERIVED_DATA_DIR"
+
+                  DOCCARCHIVE="$(find "$DERIVED_DATA_DIR" -type d -name "*.doccarchive" | head -n 1 || true)"
 
                   if [ -z "${DOCCARCHIVE:-}" ]; then
-                    echo "No .doccarchive found."
-                    echo "Tip: confirm the scheme name and that docbuild succeeds locally."
+                    echo "No .doccarchive found under $DERIVED_DATA_DIR"
+                    echo "Dumping candidates:"
+                    find "$DERIVED_DATA_DIR" -maxdepth 6 -type d -name "*docc*" || true
                     exit 1
                   fi
 
                   echo "DocC archive: $DOCCARCHIVE"
 
-                  # Export to static website into docs/docc
                   mkdir -p docs/docc
                   xcrun docc process-archive transform-for-static-hosting "$DOCCARCHIVE" \
                     --output-path docs/docc \
-                    --hosting-base-path GestorContas
+                    --hosting-base-path "$HOSTING_BASE_PATH"
 
-                  # Avoid Jekyll processing issues
                   touch docs/docc/.nojekyll
 
             - name: Commit and push generated DocC
