@@ -1,10 +1,10 @@
 📱 Debt & Bill Manager for iOS
 
-A Swift‑powered iOS app designed to help users organize bills, track payments, and manage debt installments with clarity and control.
+A Swift‑powered iOS App designed to help users organize bills, track payments, and manage debt installments with clarity and control.
 
 🚀 Overview
 
-This app provides a clean and intuitive interface for managing recurring expenses and structuring debt payments. Users can register bills, track due dates, split debts into installments, and visualize their financial commitments in a simple, actionable way.
+This App provides a clean and intuitive interface for managing recurring expenses and structuring debt payments. Users can register bills, track due dates, split debts into installments, and visualize their financial commitments in a simple, actionable way.
 
 ✨ Features
 
@@ -28,7 +28,7 @@ Clone the repository and open the project in Xcode:
 bash
 git clone https://github.com/JBOliveira-pt/GestorContas.git
 cd GestoContas
-open *.xcodeproj
+open \*.xcodeproj
 Run on an iOS Simulator or physical device.
 
 🤝 Contributing
